@@ -1,13 +1,17 @@
 import React, { Component } from 'react';
 import './App.css';
-import fetchJsonp from 'fetch-jsonp';
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
-import GridListTileBar from '@material-ui/core/GridListTileBar';
 import ListSubheader from '@material-ui/core/ListSubheader';
-import * as moment from 'moment';
+import Photo from './components/photo';
+import getPhotos from './services/flickrPublicPhotosService';
 
 class App extends Component {
+  // style for the cards to make them appear clickable
+  pointer = {
+      cursor: 'pointer'
+  }
+  
   constructor(props) {
     super(props);
     this.state = {
@@ -18,11 +22,6 @@ class App extends Component {
     };
   }
 
-  // style for the cards to make them appear clickable
-  pointer = {
-    cursor: 'pointer'
-  }
-
   // dynamically sets the number of columns based on horizontal resolution
   getCols() {
     if (window.innerWidth > 1440) {
@@ -31,9 +30,9 @@ class App extends Component {
       this.setState({cols: 4});
     } else if (window.innerWidth > 800) {
       this.setState({cols: 3});
-    } else if (window.innerWidth > 500) {
+    } else if (window.innerWidth > 380) {
       this.setState({cols: 2});
-    } else if (window.innerWidth > 160) {
+    } else {
       this.setState({cols: 1});
     }
   }
@@ -47,23 +46,12 @@ class App extends Component {
     // each time the window is resized, recalculate number of columns
     window.addEventListener("resize", this.getCols.bind(this));
 
-    // fetch pictures using jsonp
-    fetchJsonp(
-      'https://api.flickr.com/services/feeds/photos_public.gne?format=json&tags=kittens', {
-        jsonpCallbackFunction: 'jsonFlickrFeed'
-      }
-    ).then(response => response.json()).then(
+    // call getPhotos in flickr service to retrieve photos from API
+    getPhotos().then(
       json => { 
         this.setState({
           items: json.items,
           isLoaded: true
-        });
-      }
-    ).catch(
-      error => {
-        this.setState({
-          isLoaded: true,
-          error
         });
       }
     );
@@ -75,7 +63,7 @@ class App extends Component {
   }
 
   // opens a new tab and goes to the flickr page for the photo
-  goToFlickrPage(link) {
+  handlePhotoClick(link) {
     window.open(link, '_blank');
   }
 
@@ -95,21 +83,11 @@ class App extends Component {
           <GridListTile key="Subheader" cols={cols} style={{ height: 'auto' }}>
             <ListSubheader component="div">Flickr Public Photos of Kittens</ListSubheader>
           </GridListTile>
-          {items.map(item => (
-            <GridListTile style={this.pointer} key={item.link} onClick={() => this.goToFlickrPage(item.link)}>
-              <img src={item.media.m} alt={item.title} />
-              <GridListTileBar
-                title={item.title}
-                subtitle={<span>{item.author}</span>}
-                titlePosition="top"
-              />
-              <GridListTileBar
-                title={<span>Published on {moment(item.published, moment.ISO_8601).format('MMM D, YYYY')}</span>}
-                subtitle={<span>{item.tags}</span>}
-                titlePosition="bottom"
-              />
+          {items.map(item => 
+            <GridListTile style={this.pointer} onClick={() => this.handlePhotoClick(item.link)} key={item.link}>
+              <Photo item={item}></Photo>
             </GridListTile>
-          ))}
+          )}
         </GridList>
       );
     }
